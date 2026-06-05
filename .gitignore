@@ -1,0 +1,14 @@
+.build/
+.swiftpm/
+build/
+DerivedData/
+.DS_Store
+
+# Local dev tooling — not shipped (the hidden Donut Editor lives here)
+Dev/
+
+# Local design/working notes (may contain machine-specific signing details)
+PLAN.md
+
+# Backup of the pre-Halo git history
+.git.bak/
