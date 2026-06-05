@@ -1,12 +1,13 @@
 # Halo
 
-**A Liquid-Glass ring that replaces ⌘⇥ on macOS Tahoe.**
+**A Liquid-Glass ring that replaces ⌘⇥ (Command-Tab) on macOS Tahoe.**
 
-Halo is a menu-bar app for macOS 26 (Tahoe). Press **⌘⇥** once and a glowing ring
-("donut") of your running-app icons blooms around the cursor. Hover an icon to
-float it out and reveal a stack of live window previews; slide onto the stack to
-fan them out; click one to jump straight to that exact window. Press **⌘⇥** again
-(or Escape, or click outside) to dismiss — it's a toggle, no holding.
+Halo is a menu-bar app for macOS 26 (Tahoe). Press **⌘⇥** (Command-Tab) once and a
+glowing ring ("donut") of your running-app icons blooms around the cursor. Hover
+an icon to float it out and reveal a stack of live window previews; slide onto the
+stack to fan them out; click one to jump straight to that exact window. Press
+**⌘⇥** (Command-Tab) again (or Escape, or click outside) to dismiss — it's a
+toggle, no holding.
 
 It's built entirely on the native macOS 26 Liquid Glass APIs (`.glassEffect` /
 `GlassEffectContainer`): the ring opens with a spring (icons compress into a
@@ -20,8 +21,9 @@ whole-screen backdrop blur sits behind it all.
 
 ## Features
 
-- **⌘⇥ toggle.** Halo intercepts and swallows ⌘⇥ at the HID level so the native
-  switcher never appears — the ring toggles instead. No holding the key down.
+- **⌘⇥ (Command-Tab) toggle.** Halo intercepts and swallows ⌘⇥ (Command-Tab) at
+  the HID level so the native switcher never appears — the ring toggles instead.
+  No holding the key down.
 - **Opens on the cursor.** The ring blooms exactly where your pointer is.
 - **Liquid Glass throughout.** Native macOS 26 `.glassEffect` /
   `GlassEffectContainer`, with a spring open/close (icons compress into one glass
@@ -32,13 +34,17 @@ whole-screen backdrop blur sits behind it all.
   raise that exact window — across Spaces.
 - **MRU ordering.** Apps are ordered most-recently-used, so the last app you
   used is right next to the cursor.
-- **Lone-⌘ recenter.** A single ⌘ tap while the ring is open glides it to
-  recenter on the current cursor position (even onto another display).
+- **Lone-⌘ (Command) recenter.** A single ⌘ (Command) tap while the ring is open
+  glides it to recenter on the current cursor position (even onto another display).
 - **Optional screen blur.** A whole-screen backdrop blur behind the ring, with
   named levels in the menu bar (No blur / Subtle / Medium / Strong / Maximum).
 - **Menu-bar control.** Permission status, a "Show ring" toggle, and the screen-
   blur submenu. The "Show ring" and "Screen blur" choices persist across
   launches.
+- **In-app updates.** A **Check for Updates…** menu item compares your build
+  against the latest GitHub release and, on confirmation, downloads the new
+  signed app, swaps it in place, and relaunches — keeping your Accessibility
+  grant intact.
 - **Graceful previews.** Without Screen Recording, previews fall back to clean
   app-icon cards — the switcher still works.
 
@@ -103,7 +109,7 @@ Find a valid identity with `security find-identity -v -p codesigning`.
 2. From the menu-bar icon, grant **Accessibility** (required). Each row deep-links
    to the correct System Settings pane.
 3. Optionally grant **Screen Recording** (for live window previews).
-4. Press **⌘⇥**.
+4. Press **⌘⇥** (Command-Tab).
 
 The first time Accessibility is granted to an already-running process, the
 kernel may still refuse to create the event tap; Halo relaunches itself once so
@@ -114,7 +120,7 @@ the fresh process starts trusted. If a grant ever gets stuck, the menu offers a
 ## Permissions
 
 - **Accessibility — required.** This single grant powers everything: the
-  `CGEventTap` that intercepts and swallows ⌘⇥, the Accessibility window
+  `CGEventTap` that intercepts and swallows ⌘⇥ (Command-Tab), the Accessibility window
   enumeration, and `AXRaise` for bringing a window forward. (A `.defaultTap`
   keyboard event tap works with Accessibility alone, so Input Monitoring is
   **not** needed and is never requested.)
@@ -124,24 +130,28 @@ the fresh process starts trusted. If a grant ever gets stuck, the menu offers a
 
 ## Usage
 
-- **Open / close:** Press **⌘⇥**. Press it again, press **Esc**, or click outside
-  the ring to dismiss.
+- **Open / close:** Press **⌘⇥** (Command-Tab). Press it again, press **Esc**
+  (Escape), or click outside the ring to dismiss.
 - **Switch apps:** Hover an icon (it floats out with a glass bulge), then click it
   to bring that app forward.
 - **Pick a specific window:** Hover an icon to reveal its window-preview stack,
   slide onto the stack to **fan** the previews out, then click one to raise that
   exact window.
-- **Recenter:** While the ring is open, tap **⌘** alone to glide it onto the
-  current cursor position (including onto another display).
+- **Recenter:** While the ring is open, tap **⌘** (Command) alone to glide it onto
+  the current cursor position (including onto another display).
 - **Menu-bar settings:** Click the menu-bar icon for permission status, the
   **Show ring** toggle, and the **Screen blur** submenu (No blur / Subtle /
   Medium / Strong / Maximum). Both settings persist across launches.
+- **Updating:** Click the menu-bar icon and choose **Check for Updates…**. If a
+  newer release is available, confirm and Halo downloads it, replaces itself, and
+  relaunches automatically.
 
 ## How it works
 
 - **Key interception.** A `CGEventTap` installed at `.cghidEventTap` (the earliest
-  tap point) swallows ⌘⇥ before the native switcher sees it, and tracks the
-  modifier stream to detect a lone-⌘ tap for recentering. It runs on a dedicated
+  tap point) swallows ⌘⇥ (Command-Tab) before the native switcher sees it, and
+  tracks the modifier stream to detect a lone-⌘ (Command) tap for recentering. It
+  runs on a dedicated
   thread with a watchdog that re-arms the tap if the system disables it.
 - **App list.** Running regular apps come from `NSWorkspace`, kept in a
   self-maintained most-recently-used order (there's no public API for the system

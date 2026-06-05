@@ -42,6 +42,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         permissions.onPoll = { [weak self] status in
             self?.installTapIfReady(status)
         }
+        // Rebuild the menu when an update goes in/out of flight so the
+        // "Check for Updates…" item reflects the busy state (the menu is cached).
+        Updater.shared.onBusyChanged = { [weak self] _ in
+            guard let self else { return }
+            self.rebuildMenu(self.permissions.status)
+        }
+        // If a previous self-update failed mid-swap, the helper left a marker and
+        // relaunched the old build — surface that instead of failing silently.
+        reportFailedUpdateIfNeeded()
 
         permissions.refresh()
         diag("launch: ax=\(permissions.status.accessibility) sr=\(permissions.status.screenRecording) spawnedByRelaunch=\(spawnedByRelaunch)")
@@ -171,13 +180,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func rebuildMenu(_ status: Permissions.Status) {
         let menu = NSMenu()
 
+        let version = Updater.currentVersion
         let headerTitle: String
         if tapInstalled {
-            headerTitle = "Halo — active ✓"
+            headerTitle = "Halo \(version) — active ✓"
         } else if status.accessibility {
-            headerTitle = "Halo — granted, relaunch to activate"
+            headerTitle = "Halo \(version) — granted, relaunch to activate"
         } else {
-            headerTitle = "Halo — needs Accessibility"
+            headerTitle = "Halo \(version) — needs Accessibility"
         }
         let header = NSMenuItem(title: headerTitle, action: nil, keyEquivalent: "")
         header.isEnabled = false
@@ -221,10 +231,41 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         blurItem.submenu = blurMenu
         menu.addItem(blurItem)
 
+        // Updates.
+        menu.addItem(.separator())
+        let busy = Updater.shared.isBusy
+        let updateItem = NSMenuItem(title: busy ? "Updating…" : "Check for Updates…",
+                                    action: busy ? nil : #selector(checkForUpdates), keyEquivalent: "")
+        updateItem.target = self
+        updateItem.isEnabled = !busy
+        menu.addItem(updateItem)
+
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit Halo",
                                 action: #selector(quit), keyEquivalent: "q"))
         statusItem?.menu = menu
+    }
+
+    @objc private func checkForUpdates() {
+        Updater.shared.checkForUpdates(userInitiated: true)
+    }
+
+    /// Surface a failed self-update (the swap helper restored the old build and
+    /// left a marker), then clear it so it shows only once.
+    private func reportFailedUpdateIfNeeded() {
+        let marker = Updater.failureMarker
+        guard FileManager.default.fileExists(atPath: marker.path) else { return }
+        let detail = (try? String(contentsOf: marker, encoding: .utf8))?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        try? FileManager.default.removeItem(at: marker)
+        let alert = NSAlert()
+        alert.messageText = "Update could not be installed"
+        alert.informativeText = "The last update couldn't be applied, so Halo is still on the previous version. You can try again from the menu."
+            + ((detail?.isEmpty == false) ? "\n\n\(detail!)" : "")
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
     }
 
     // MARK: - Settings (menu-bar)
