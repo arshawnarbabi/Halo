@@ -95,7 +95,8 @@ final class SwitcherController {
         guard !slots.isEmpty else { return }
 
         model.configure(slots: slots, center: center,
-                        backingScale: screen.backingScaleFactor)
+                        backingScale: screen.backingScaleFactor,
+                        screenSize: screen.frame.size)
         model.openProgress = 0   // start compressed; sprung to 1 below
 
         Task { await thumbnails.refresh() }
@@ -137,7 +138,8 @@ final class SwitcherController {
         guard isShown else { return }
         let slots = buildSlots()
         guard !slots.isEmpty else { return }
-        model.configure(slots: slots, center: model.center, backingScale: model.backingScale)
+        model.configure(slots: slots, center: model.center, backingScale: model.backingScale,
+                        screenSize: model.screenSize)
     }
 
     // MARK: - Backdrop blur (WindowServer; not SwiftUI-animatable → stepped here)

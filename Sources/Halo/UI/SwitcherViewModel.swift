@@ -49,6 +49,8 @@ final class SwitcherViewModel {
     let appearance: Appearance
     var geometry: DonutGeometry { appearance.geometry }
     var backingScale: CGFloat = 2
+    /// Panel (screen) size, so the fanned preview grid can be clamped on-screen.
+    var screenSize: CGSize = .zero
 
     /// Called when the user commits a choice (raise + dismiss).
     var onCommit: ((HoverTarget) -> Void)?
@@ -74,7 +76,7 @@ final class SwitcherViewModel {
         self.appearance = appearance
     }
 
-    func configure(slots: [AppSlot], center: CGPoint, backingScale: CGFloat) {
+    func configure(slots: [AppSlot], center: CGPoint, backingScale: CGFloat, screenSize: CGSize) {
         session &+= 1
         loadTasks.forEach { $0.cancel() }
         loadTasks.removeAll()
@@ -88,6 +90,7 @@ final class SwitcherViewModel {
         self.slots = slots
         self.center = center
         self.backingScale = backingScale
+        self.screenSize = screenSize
         self.target = .neutral
         self.windowsByPID.removeAll()
         self.thumbs.removeAll()
@@ -286,13 +289,47 @@ final class SwitcherViewModel {
                                          z: Double(-idx))
             }
         } else {
-            // Fan: cards spread along the axis perpendicular to "outward".
-            let step = geometry.previewSize.width + geometry.fanSpacing
+            // Fan: a compact, SCREEN-axis-aligned grid on the outward side of the
+            // ring. The old design spread cards along the radial-perpendicular
+            // (`perp`) axis, which rotates with the icon's position around the ring
+            // — so the row went diagonal and, because the step used the card WIDTH
+            // along a near-vertical line, left big vertical gaps. A screen-aligned
+            // grid is organized and consistent for EVERY icon position, with tight
+            // uniform spacing, and is clamped to stay on-screen. (`anchor`/`perp`
+            // are used by the deck branch above; the grid is positioned below.)
+            let n = k
+            let cols = max(1, Int(ceil(Double(n).squareRoot())))
+            let rows = Int(ceil(Double(n) / Double(cols)))
+            let w = geometry.previewSize.width, h = geometry.previewSize.height
+            let gap = max(12, geometry.fanSpacing) // tight, uniform gap
+            let pitchX = w + gap, pitchY = h + gap
+            let gridW = CGFloat(cols) * w + CGFloat(cols - 1) * gap
+            let gridH = CGFloat(rows) * h + CGFloat(rows - 1) * gap
+
+            // Grid center: outward from the donut center, far enough that the grid's
+            // near edge clears the ring by `previewGap` regardless of the (possibly
+            // diagonal) outward angle — but the grid itself stays axis-aligned.
+            let halfOut = (gridW / 2) * abs(outward.dx) + (gridH / 2) * abs(outward.dy)
+            let clear = geometry.outerRadius + geometry.previewGap + halfOut
+            var gc = CGPoint(x: center.x + outward.dx * clear,
+                             y: center.y + outward.dy * clear)
+
+            // Keep the whole grid on-screen.
+            if screenSize.width > 0, screenSize.height > 0 {
+                let m: CGFloat = 16
+                let minX = m + gridW / 2, maxX = screenSize.width - m - gridW / 2
+                let minY = m + gridH / 2, maxY = screenSize.height - m - gridH / 2
+                if minX <= maxX { gc.x = min(max(gc.x, minX), maxX) }
+                if minY <= maxY { gc.y = min(max(gc.y, minY), maxY) }
+            }
+
+            // Place each card; full rows and the partial last row are both centered.
             return wins.enumerated().map { idx, w in
-                let offset = (CGFloat(idx) - CGFloat(k - 1) / 2) * step
-                let c = CGPoint(x: anchor.x + perp.dx * offset,
-                                y: anchor.y + perp.dy * offset)
-                return PreviewCardLayout(id: idx, window: w, center: c,
+                let row = idx / cols, col = idx % cols
+                let inRow = (row == rows - 1) ? (n - cols * (rows - 1)) : cols
+                let x = gc.x + (CGFloat(col) - CGFloat(inRow - 1) / 2) * pitchX
+                let y = gc.y + (CGFloat(row) - CGFloat(rows - 1) / 2) * pitchY
+                return PreviewCardLayout(id: idx, window: w, center: CGPoint(x: x, y: y),
                                          rotation: .zero, scale: 1, z: Double(idx))
             }
         }
