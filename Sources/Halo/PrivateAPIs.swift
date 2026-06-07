@@ -45,6 +45,23 @@ let kSLPSUserGenerated: UInt32 = 0x200
 @_silgen_name("CGSMainConnectionID")
 func CGSMainConnectionID() -> Int32
 
+/// WindowServer-side hardware window capture (SkyLight). Unlike SCK's
+/// desktop-independent screenshot — which fails with SCStreamError -3811 for any
+/// window that isn't on the ACTIVE Space — this renders a window regardless of
+/// Space: fullscreen apps on their own Space, other-Space windows, even
+/// minimized ones (last-rendered content). Returns a CFArray of CGImage (one per
+/// requested id; empty on failure). Requires Screen Recording. Same approach as
+/// AltTab / yabai.
+@_silgen_name("CGSHWCaptureWindowList")
+func CGSHWCaptureWindowList(_ connection: Int32,
+                            _ windowList: UnsafeMutablePointer<CGWindowID>,
+                            _ windowCount: UInt32,
+                            _ options: UInt32) -> Unmanaged<CFArray>?
+
+// CGSHWCaptureWindowList options (per AltTab/Hammerspoon research).
+let kCGSCaptureIgnoreGlobalClipShape: UInt32 = 1 << 11
+let kCGSWindowCaptureNominalResolution: UInt32 = 1 << 9
+
 /// The WindowServer-side, live, controllable behind-window blur (radius in
 /// points; 0 disables). The only verified way to blur the desktop behind a
 /// window with an adjustable radius on macOS — used by Terminal/iTerm2/WezTerm.

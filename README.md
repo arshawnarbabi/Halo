@@ -31,7 +31,9 @@ whole-screen backdrop blur sits behind it all.
   and an edge outline that hugs the bulge↔ring junction.
 - **Live window previews.** Hover an icon and a stack of that app's windows
   appears; slide onto the stack and the previews fan out. Click a preview to
-  raise that exact window — across Spaces.
+  raise that exact window — across Spaces. Previews work for **fullscreen apps
+  on their own Space** (and other-Space / minimized windows) too, via a private
+  SkyLight capture fallback.
 - **MRU ordering.** Apps are ordered most-recently-used, so the last app you
   used is right next to the cursor.
 - **Lone-⌘ (Command) recenter.** A single ⌘ (Command) tap while the ring is open
@@ -186,6 +188,9 @@ the fresh process starts trusted. If a grant ever gets stuck, the menu offers a
   private `_AXUIElementGetWindow`.
 - **Previews.** Live thumbnails are captured with **ScreenCaptureKit**
   (`SCScreenshotManager`), fetched lazily on hover and cached per session.
+  Windows SCK can't screenshot — fullscreen apps on their own Space,
+  other-Space and minimized windows — fall back to the private SkyLight
+  hardware capture (`CGSHWCaptureWindowList`), downscaled to thumbnail size.
 - **Window raising.** Clicking a preview raises that specific window with the
   private **SkyLight** SLPS sequence (`_SLPSSetFrontProcessWithOptions` plus a
   key-window poke), the only reliable cross-Space path, with a public
