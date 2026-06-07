@@ -82,6 +82,31 @@ Other invocations:
 ./Scripts/build.sh release nolaunch # build + sign, but don't open it
 ```
 
+### Downloaded `Halo.app.zip` instead? ("Apple could not verify…")
+
+If you grab a prebuilt `Halo.app.zip` from [Releases](https://github.com/arshawnarbabi/Halo/releases)
+instead of building from source, macOS will block the first launch with
+*"Apple could not verify 'Halo' is free of malware."* That's expected: the
+release is signed with an Apple Development certificate, not a notarized
+Developer ID one, and Gatekeeper only waves through the latter for downloaded
+apps. Two ways past it:
+
+1. **Terminal (recommended).** Move `Halo.app` to `/Applications`, then strip
+   the quarantine flag:
+
+   ```sh
+   xattr -dr com.apple.quarantine /Applications/Halo.app
+   ```
+
+   This is the better route for Halo specifically — it also prevents Gatekeeper
+   **App Translocation** (running the app from a random read-only path), which
+   would break the TCC permission identity and the in-app updater.
+
+2. **System Settings.** Try to open Halo once (let it get blocked), then go to
+   **System Settings ▸ Privacy & Security**, scroll down to the "Halo was
+   blocked" notice, and click **Open Anyway**. (On macOS 26 the old
+   right-click ▸ Open bypass no longer works for unnotarized apps.)
+
 ### Signing (why it matters)
 
 The script signs with an **Apple Development** certificate so the code identity
@@ -181,7 +206,9 @@ macOS that changes or removes a symbol degrades gracefully instead of crashing.
 
 - **Not Mac App Store eligible.** Halo relies on private SkyLight / Accessibility
   / CoreGraphics Services symbols, so it can't ship on the App Store. Distribution
-  is self-build / sideload only.
+  is self-build / sideload only — if you downloaded a release zip and macOS
+  blocks it, see
+  [Downloaded `Halo.app.zip` instead?](#downloaded-haloappzip-instead-apple-could-not-verify).
 - **macOS 26 only.** It targets Tahoe and the native Liquid Glass APIs; it won't
   build or run on earlier macOS.
 - **Apple Silicon only.**
