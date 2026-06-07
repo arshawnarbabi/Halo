@@ -4,13 +4,16 @@ import CoreGraphics
 
 /// A single switchable window of some app.
 ///
-/// Carries the live `AXUIElement` so it can be raised later. AX element handles
+/// Carries the live `AXUIElement` so it can be raised later — `nil` for windows
+/// discovered through CGWindowList instead of AX (fullscreen apps on their own
+/// Space, other-Space windows; `kAXWindows` doesn't report those), which are
+/// raised via the SLPS path that needs only pid + window id. AX element handles
 /// are only ever *used* from `axQueue` (see AX.swift); this type is marked
 /// `@unchecked Sendable` so it can be handed to the main actor for display while
 /// the element itself is touched only on the AX queue.
 struct WindowInfo: Identifiable, @unchecked Sendable {
     let id: CGWindowID          // 0 when the private bridge couldn't resolve one
-    let axElement: AXUIElement
+    let axElement: AXUIElement? // nil for CG-discovered (other-Space) windows
     let pid: pid_t
     let title: String
     let isMinimized: Bool

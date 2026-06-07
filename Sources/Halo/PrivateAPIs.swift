@@ -62,6 +62,19 @@ func CGSHWCaptureWindowList(_ connection: Int32,
 let kCGSCaptureIgnoreGlobalClipShape: UInt32 = 1 << 11
 let kCGSWindowCaptureNominalResolution: UInt32 = 1 << 9
 
+/// Maps windows → the Spaces they're placed on (SkyLight). The key
+/// discriminator when discovering other-Space windows via CGWindowList: a
+/// window on NO Space is a phantom (created but never ordered in — every app
+/// has a few) or minimized, while real windows — including fullscreen apps on
+/// their own Space — report at least one Space id. Verified on macOS 26.
+@_silgen_name("CGSCopySpacesForWindows")
+func CGSCopySpacesForWindows(_ connection: Int32,
+                             _ mask: Int32,
+                             _ windowIDs: CFArray) -> Unmanaged<CFArray>?
+
+/// CGSCopySpacesForWindows mask: current | other | user Spaces.
+let kCGSAllSpacesMask: Int32 = 7
+
 /// The WindowServer-side, live, controllable behind-window blur (radius in
 /// points; 0 disables). The only verified way to blur the desktop behind a
 /// window with an adjustable radius on macOS — used by Terminal/iTerm2/WezTerm.

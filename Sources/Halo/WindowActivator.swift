@@ -20,8 +20,8 @@ enum WindowActivator {
     static func raise(_ window: WindowInfo) {
         axQueue.async {
             // Unminimize first; the raise is a no-op on a minimized window.
-            if window.isMinimized {
-                AXUIElementSetAttributeValue(window.axElement,
+            if window.isMinimized, let element = window.axElement {
+                AXUIElementSetAttributeValue(element,
                                              kAXMinimizedAttribute as CFString,
                                              kCFBooleanFalse)
             }
@@ -39,14 +39,18 @@ enum WindowActivator {
                 }
             }
 
-            // Raise within the app's window stack regardless of path.
-            let raiseErr = AXUIElementPerformAction(window.axElement, kAXRaiseAction as CFString)
+            // Raise within the app's window stack. CG-discovered (other-Space)
+            // windows carry no AX element — for those the SLPS path alone
+            // fronts the window, and macOS switches to its Space.
+            let axRaised = window.axElement.map {
+                AXUIElementPerformAction($0, kAXRaiseAction as CFString) == .success
+            } ?? true
 
             // Fall back to public activation if the private path wasn't used OR
             // the AX raise failed (e.g. a stale window element). When the
             // private path already fronted the app, just nudge it (no
             // .activateAllWindows, which would pull every window forward).
-            if !usedPrivatePath || raiseErr != .success {
+            if !usedPrivatePath || !axRaised {
                 let options: NSApplication.ActivationOptions = usedPrivatePath ? [] : [.activateAllWindows]
                 DispatchQueue.main.async {
                     NSRunningApplication(processIdentifier: window.pid)?
